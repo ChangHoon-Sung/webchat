@@ -1,0 +1,41 @@
+version: '3'
+services:  
+    redis:
+        image: redis:alpine
+        container_name: redis
+        restart: always
+        networks:
+            - backend
+        ports:
+            - 6379:6379
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+    chat:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: chat:latest
+        container_name: chat
+        restart: always
+        networks:
+            - backend
+        ports:
+            - 5500:5500
+        depends_on:
+            - redis
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:3000"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+
+networks:
+    backend: {}
