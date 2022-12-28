@@ -9,5 +9,7 @@ RUN pip install -r requirements.txt
 
 COPY ./server /app
 
+COPY ./index.html /app
+
 # Run the application
 CMD ["python", "app.py"]

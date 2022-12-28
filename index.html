@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Chat</title>
+    <script>
+        const DEFAULT_ROOM_ID = 0;
+        const HOST = window.location.host;
+
+        var user_id, room_id = DEFAULT_ROOM_ID;
+        var myname = get_name();
+
+        var ws = new WebSocket(`ws://${HOST}/chat`);
+        ws.onopen = function () {
+            ws.send(JSON.stringify({
+                type: 'init',
+                name: myname,
+                room_id: DEFAULT_ROOM_ID,
+                timestamp: Date.now()
+            }));
+        };
+        ws.onmessage = function (response) {
+            //TODO: 유저 구분을 위해 ID를 받아와야하고, 이를 메세지와 구분해야분
+            let res = JSON.parse(response.data);
+            if (res.type == 'init') {
+                document.getElementById('message').innerHTML += `${res.name} (id:${res.user_id}) joined at ${new Date(res.timestamp).toLocaleTimeString()} <br>`;
+            }
+            else if (res.type == 'msg') {
+                msg_box = document.getElementById('msg_box');
+                msg_box.scrollTop = msg_box.scrollHeight - msg_box.clientHeight;
+                document.getElementById('message').innerHTML += `${res.name}: ${res.content} <br>`;
+                document.getElementById('btn_send').disabled = false;
+            }
+            else if (res.type == 'quit') {
+                document.getElementById('message').innerHTML += `${res.name} disconnected at ${new Date(res.timestamp).toLocaleTimeString()} <br>`;
+            }
+        };
+        ws.onclose = function () {
+            document.getElementById("message").innerHTML += "Connection is closed. <br>";
+            document.getElementById("input_msg").disabled = true;
+            document.getElementById("btn_send").disabled = true;
+            document.getElementById("btn_quit").disabled = true;
+        };
+
+        function get_name() {
+            let name = prompt("Enter your nickname", "Anonymous");
+            if (name == null || name == "") {
+                name = "Anonymous";
+            }
+            return name;
+        }
+
+        function send_msg() {
+            var content = document.getElementById('input_msg').value;
+            if (content == "") return;
+
+            document.getElementById('btn_send').disabled = true;
+            document.getElementById('input_msg').value = "";
+            ws.send(JSON.stringify({
+                type: 'msg',
+                name: myname,
+                user_id: user_id,
+                content: content,
+                timestamp: Date.now()
+            }));
+        }
+
+        function close_socket() {
+            ws.close();
+        }
+
+
+    </script>
+</head>
+
+<body>
+    <h1>Simple Chat</h1>
+    <div class="div" id="msg_box" style="overflow-y: scroll; height:200px;">
+        <p id="message"></p>
+    </div>
+    <input type="text" id="input_msg" placeholder="Enter message">
+    <button id="btn_send">
+        <class="btn btn-primary" onclick="send_msg()">Send
+    </button>
+    <button id="btn_quit">
+        <class="btn btn-primary" onclick="close_socket()">Quit
+    </button>
+    <script>
+        // Add event listener for enter key
+        document.getElementById("input_msg").addEventListener("keypress", function (event) {
+            if (event.key === 'Enter' || event.keyCode == 13) {
+                send_msg();
+            }
+        });
+
+        document.getElementById("btn_send").addEventListener("keypress", function (event) {
+            if (event.key === 'Enter' || event.keyCode == 13) {
+                send_msg();
+            }
+        });
+
+        document.getElementById("btn_quit").addEventListener("keypress", function (event) {
+            if (event.key === 'Enter' || event.keyCode == 13) {
+                close_socket();
+            }
+        });
+
+        // Focus on text input
+        document.getElementById("input_msg").focus();
+    </script>
+</body>
+
+</html>
