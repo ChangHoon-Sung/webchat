@@ -37,6 +37,9 @@ async def broadcast(app: web.Application, pubsub: redis.client.PubSub) -> None:
                 if msg and not ws.closed:
                     try:
                         await ws.send_str(msg['data'].decode('utf-8'))
+                    except asyncio.CancelledError as e:
+                        print(f'broadcast: {type(e).__name__}: {e}')
+                        raise
                     except ConnectionResetError as e:
                         # ignore the error when the websocket is closing
                         print(f'broadcast: {type(e).__name__}(ig): {e}')
