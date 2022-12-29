@@ -83,9 +83,9 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
     except Exception as e:
         print(f'websocket handle init: {e}')
         if ws is not None:
-            await ws.close()
             if ws in request.app['websocket']:
-                request.app['websocket'].remove(ws)
+                request.app['websocket'].discard(ws)
+            await ws.close()
         return
 
     user_id = None
@@ -116,7 +116,10 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
         print(f'unknown exception {e}')
         pass    # close the connection
     finally:
-        # always leave the default room
+        request.app['websocket'].remove(ws)
+        await ws.close()
+        print(f'websocket connection closed: user_id {user_id}')
+        
         name = await request.app['redis_client'].get(f'user:{user_id}')
         await request.app['redis_client'].publish(f'room:{DEFAULT_ROOM_ID}:messages', json.dumps(
             {'type': 'quit', 'name': name.decode('utf-8'), 'timestamp': get_milli_time()}))
