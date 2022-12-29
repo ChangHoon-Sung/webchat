@@ -121,14 +121,13 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
         print(f'websocket connection closed: user_id {user_id}')
         
         name = await request.app['redis_client'].get(f'user:{user_id}')
-        await request.app['redis_client'].publish(f'room:{DEFAULT_ROOM_ID}:messages', json.dumps(
-            {'type': 'quit', 'name': name.decode('utf-8'), 'timestamp': get_milli_time()}))
-        await request.app['redis_client'].srem(f'room:{DEFAULT_ROOM_ID}:users', user_id)
-        await request.app['redis_client'].srem(f'user:{user_id}:rooms', DEFAULT_ROOM_ID)
-        await request.app['redis_client'].delete(f'user:{user_id}')
-        await ws.close()
-        request.app['websocket'].remove(ws)
-        print(f'websocket connection closed: user_id {user_id}')
+        if name:
+            await request.app['redis_client'].publish(f'room:{DEFAULT_ROOM_ID}:messages', json.dumps(
+                {'type': 'quit', 'name': name.decode('utf-8'), 'timestamp': get_milli_time()}))
+            await request.app['redis_client'].srem(f'room:{DEFAULT_ROOM_ID}:users', user_id)    # always leave the default room
+            await request.app['redis_client'].srem(f'user:{user_id}:rooms', DEFAULT_ROOM_ID)    # always leave the default room
+            await request.app['redis_client'].delete(f'user:{user_id}')
+    
 
 
 async def index(request: web.Request) -> web.Response:
