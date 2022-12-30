@@ -33,7 +33,7 @@
                 document.getElementById('btn_send').disabled = false;
             }
             else if (res.type == 'quit') {
-                document.getElementById('message').innerHTML += `${res.name} disconnected at ${new Date(res.timestamp).toLocaleTimeString()} <br>`;
+                document.getElementById('message').innerHTML += `${res.name} (id:${res.user_id}) disconnected at ${new Date(res.timestamp).toLocaleTimeString()} <br>`;
             }
         };
         ws.onclose = function () {
