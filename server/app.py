@@ -6,6 +6,7 @@ from aiohttp import web
 import aiohttp
 import json
 import redis.asyncio
+import redis.client
 
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
@@ -96,13 +97,14 @@ async def release_all(app: web.Application) -> None:
         await ws.close()
         mylogger.info(
             f'release_all: websocket connection closed')
+    app['redis_broadcast'].cancel()
     await app['redis_broadcast']
     await app['redis_client'].close()
     mylogger.info(
         f'release_all: redis client closed')
 
 
-async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
+async def websocket_handler(request: web.Request) -> None:
     try:
         ws = web.WebSocketResponse(receive_timeout=300)  # 5 minutes
         await ws.prepare(request)
@@ -127,7 +129,6 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
             await ws.close()
             mylogger.warning(
                 f'websocket_handler: abnormal websocket connection closed')
-        return
 
     user_id = None
     try:
@@ -182,7 +183,7 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
             await request.app['redis_client'].delete(f'user:{user_id}')
 
 
-async def index(request: web.Request) -> web.Response:
+async def index(request: web.Request) -> web.FileResponse:
     return web.FileResponse('index.html')
 
 if __name__ == '__main__':
